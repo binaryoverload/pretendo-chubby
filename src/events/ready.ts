@@ -26,7 +26,8 @@ export default async function readyHandler(client: Client): Promise<void> {
 	console.log('Establishing DB connection');
 	await sequelize.sync(config.sequelize);
 	const connection = await sequelize.connectionManager.getConnection({ type: 'write' }) as Database;
-	connection.loadExtension('./lib/phhammdist/phhammdist.so');
+
+	loadSqlitePhhammdist(connection);
 
 	console.log('Loading NSFWJS models');
 	await loadModel();
@@ -47,6 +48,26 @@ export default async function readyHandler(client: Client): Promise<void> {
 	await checkMatchmakingThreads();
 
 	await setupSlowMode(client);
+}
+
+function loadSqlitePhhammdist(connection: Database): void {
+	const platformName = process.platform;
+	const archName = process.arch;
+	switch (platformName) {
+		case 'linux':
+			connection.loadExtension('./lib/phhammdist/phhammdist.so');
+			return;
+		case 'win32':
+			connection.loadExtension('./lib/phhammdist/phhammdist.dll');
+			return;
+		case 'darwin':
+			if (archName === 'arm64') {
+				connection.loadExtension('./lib/phhammdist/phhammdist-arm64.dylib');
+				return;
+			}
+	}
+	
+	throw new Error(`Unsupported platform for sqlite3 phhammdist extension: ${platformName} (${archName})`);
 }
 
 function loadBotHandlersCollection(client: Client): void {
