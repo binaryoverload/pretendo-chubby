@@ -55,16 +55,28 @@ function loadSqlitePhhammdist(connection: Database): void {
 	const archName = process.arch;
 	switch (platformName) {
 		case 'linux':
-			connection.loadExtension('./lib/phhammdist/phhammdist.so');
-			return;
+			switch (archName) {
+				case 'arm64':
+					connection.loadExtension('./lib/phhammdist/phhammdist-arm64.so');
+					return;
+				case 'x64':
+					connection.loadExtension('./lib/phhammdist/phhammdist-x64.so');
+					return;
+			}
+			break;
 		case 'win32':
 			connection.loadExtension('./lib/phhammdist/phhammdist.dll');
 			return;
 		case 'darwin':
-			if (archName === 'arm64') {
-				connection.loadExtension('./lib/phhammdist/phhammdist-arm64.dylib');
-				return;
+			switch (archName) {
+				case 'arm64':
+					connection.loadExtension('./lib/phhammdist/phhammdist-arm64.dylib');
+					return;
+				case 'x64':
+					connection.loadExtension('./lib/phhammdist/phhammdist-x64.dylib');
+					return;
 			}
+			break;
 	}
 	
 	throw new Error(`Unsupported platform for sqlite3 phhammdist extension: ${platformName} (${archName})`);
